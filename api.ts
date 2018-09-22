@@ -119,9 +119,9 @@ export const getArticle = async (url: string, page: number = 1):Promise<ArticleR
 				}
 			}
 			return {
-				title: $el.find('.c-post__header__title').text(),
-				content: $('.c-article__content').html(),
-				author: $el.find('.userid').text(),
+				title: $el.find('.c-post__header__title').text().trim(),
+				content: $el.find('.c-article__content').html().trim(),
+				author: $el.find('.userid').text().trim(),
 				url: joinUrl(
 					'https://forum.gamer.com.tw/',
 					$(el)
