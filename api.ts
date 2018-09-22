@@ -18,7 +18,7 @@ const normalizeBahaDate = s =>
 				.subtract('2D')
 				.format('MM/DD')
 		)
-const getPage = $ => ({
+const getPage = ($:CheerioStatic):Page => ({
 	current: parseInt(
 		$('.pagenow')
 			.first()
@@ -30,7 +30,7 @@ const getPage = $ => ({
 			.text()
 	)
 })
-export interface ArticleItem {
+export interface ArticleListItem {
 	text: string
 	url: string
 	author: string
@@ -38,10 +38,34 @@ export interface ArticleItem {
 	sticky: boolean
 	deleted: boolean
 }
-// url='https://forum.gamer.com.tw/B.php?bsn=18673&subbsn=18'
-export const getArticleList = async (url: string) => {
-	const $ = await xf.get(url).text(cheerio.load)
-	const articles = <ArticleItem[]>(<any>$('.b-list__row')
+export interface ArticleFloor {
+	title?: string
+	content?: string
+	author?: string
+	url?: string
+	deleted: boolean
+}
+export interface Page{
+	current: number
+	last: number
+}
+export interface Pageable {
+	hasNext(): boolean
+	next(): Promise<Pageable>
+	next<T>(): Promise<T>
+	page: Page
+}
+export interface ArticleListResponse extends Pageable{
+	articles: ArticleListItem[]
+	next(): Promise<ArticleListResponse>
+}
+export interface ArticleResponse extends Pageable{
+	floors: ArticleFloor[]
+	next(): Promise<ArticleResponse>
+}
+export const getArticleList = async (url: string, page: number = 1):Promise<ArticleListResponse> => {
+	const $ = await xf.get(url, { qs: { page } }).text(cheerio.load)
+	const articles = <ArticleListItem[]>(<any>$('.b-list__row')
 		.map((i, el) => {
 			const $el = $(el)
 			const deleted = $el.hasClass('b-list__row--delete')
@@ -71,23 +95,19 @@ export const getArticleList = async (url: string) => {
 			}
 		})
 		.toArray())
+	const pageo = getPage($)
 	return {
-		page: getPage($),
-		articles
+		page: pageo,
+		articles,
+		hasNext: () => page < pageo.last,
+		next: () => getArticleList(url, page + 1)
 	}
 }
 
 // exports.getArticleList('https://forum.gamer.com.tw/B.php?bsn=18673&subbsn=18').then(console.log)
 
-export interface ArticleFloor {
-	title?: string
-	content?: string
-	author?: string
-	url?: string
-	deleted: boolean
-}
-export const getArticle = async url => {
-	const $ = await xf.get(url).text(x => cheerio.load(x, { decodeEntities: false }))
+export const getArticle = async (url: string, page: number = 1):Promise<ArticleResponse> => {
+	const $ = await xf.get(url, { qs: { page } }).text(x => cheerio.load(x, { decodeEntities: false }))
 	const floors = <ArticleFloor[]>(<any>$('.c-section[id]')
 		.map((i, el) => {
 			const $el = $(el)
@@ -112,9 +132,23 @@ export const getArticle = async url => {
 			}
 		})
 		.toArray())
+	const pageo = getPage($)
 	return {
-		page: getPage($),
-		floors
+		page: pageo,
+		floors,
+		hasNext: () => page < pageo.last,
+		next: () => getArticle(url, page + 1)
 	}
 }
-// exports.getArticle('https://forum.gamer.com.tw/C.php?bsn=18673&snA=166595&tnum=35&subbsn=18').then(console.log)
+export const pageableToArray = async<T extends Pageable> (iter: T):Promise<(T)[]> => {
+	if (!iter.hasNext()) {
+		return []
+	}
+	let ar = [iter]
+	iter = await iter.next<T>()
+	while (iter.hasNext()) {
+		ar.push(iter)
+		iter = await iter.next<T>()
+	}
+	return ar
+}
