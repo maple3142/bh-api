@@ -1,0 +1,22 @@
+{
+	"name": "bhmc-check",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"dependencies": {
+		"@types/cheerio": "^0.22.9",
+		"@types/qs": "^6.5.1",
+		"cheerio": "^1.0.0-rc.2",
+		"lodash": "^4.17.11",
+		"moment": "^2.22.2",
+		"qs": "^6.5.2",
+		"xfetch-js": "^0.1.5"
+	},
+	"devDependencies": {},
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC"
+}
